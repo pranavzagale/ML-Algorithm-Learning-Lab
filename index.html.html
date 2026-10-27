@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ML Algorithm Learning Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{color-scheme:light;--bg:#F4F7FB;--ink:#0B1220;--mute:#3A4A5F;--line:#C5D1E0;--blue:#1D4ED8;--green:#0B6B4F;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:22px 14px 48px}
+h1{font-size:clamp(1.7rem,5vw,2.4rem);margin:0 0 6px;line-height:1.2}
+h2{font-size:1.35rem;margin:0 0 8px}h3{font-size:1.1rem;margin:0 0 8px}p{margin:0 0 10px}
+.sub{color:var(--mute);max-width:70ch}
+.card{background:#fff;border:2px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+#nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;margin:16px 0}
+#nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;border:2px solid var(--line);background:#fff;border-radius:12px;font:inherit;font-weight:700;cursor:pointer;color:var(--ink);text-align:center;line-height:1.3}
+#nav button span{font-size:1.7rem}
+#nav button.on{border-color:var(--blue);background:#DBE7FF;color:var(--blue)}
+label.f{display:flex;flex-direction:column;font-weight:700;gap:4px;margin-bottom:12px}
+input,textarea{font:inherit;font-weight:700;color:var(--ink);background:#fff;border:2px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+button{font:inherit;font-weight:700;border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:8px;padding:9px 16px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button.go{background:var(--blue);border-color:var(--blue);color:#fff}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 0 16px}
+#pos{font-weight:700;color:var(--mute)}
+#err{display:none;background:#FDE7EA;border:2px solid #B00020;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-weight:700}
+.num{display:inline-block;background:var(--blue);color:#fff;border-radius:6px;padding:0 9px;margin-right:8px}
+.eq{background:#EEF3FA;border-radius:8px;padding:8px 12px;font-weight:700;margin:6px 0 10px;overflow-x:auto}
+.step.now{border-color:var(--blue)}
+.sc{overflow-x:auto;margin:8px 0}
+table{border-collapse:collapse}
+th,td{border:2px solid var(--line);padding:5px 10px;text-align:center;font-weight:700;white-space:nowrap}
+th{background:#E8EEF6}
+tr.win td{background:#CFF2E3}
+.chart{overflow-x:auto;margin:8px 0}.chart svg{min-width:420px;display:block}
+svg text{font-family:inherit;font-weight:700;fill:var(--ink)}
+.chip{border-radius:6px;padding:1px 8px;font-weight:700}
+.c0{background:#DBE7FF;color:#1D4ED8}.c1{background:#FFE6C7;color:#9A4A00}.c2{background:#D2F4E6;color:#036B4A}.c3{background:#EEDBFB;color:#7A1FB8}
+#fin{display:none;background:#FFF1C2;border:3px solid #C98A00}
+.hero{background:linear-gradient(135deg,#DBE7FF,#D2F4E6);border:2px solid var(--line);border-radius:16px;padding:20px;margin-bottom:6px}
+input[type=range]{padding:0;accent-color:#1D4ED8;height:30px}output{color:var(--blue)}#sim{border:3px solid #0B6B4F}#sim:empty{display:none}
+</style></head><body><main>
+<div class="hero"><h1>ML Algorithm Learning Lab</h1>
+<p class="sub">Learn machine learning by seeing it work. Step 1: choose an algorithm. Step 2: keep the example data or type your own. Step 3: press Next to follow every calculation, one small step at a time. Step 4: move the sliders in the green simulation box to see how the algorithm reacts.</p></div>
+<nav id="nav" aria-label="Choose an algorithm"></nav>
+<section class="card"><h2 id="ttl"></h2><p id="goal" class="sub"></p></section>
+<section class="card"><h2>Enter your data</h2><div id="form"></div><button class="go" id="run">Solve step by step</button></section>
+<div id="err" role="alert"></div>
+<div class="ctl"><button id="start">⟲ Start over</button><button id="prev">◀ Previous</button><button class="go" id="next">Next ▶</button><button id="all">Show all</button><span id="pos"></span></div>
+<div id="steps" aria-live="polite"></div>
+<section class="card" id="fin"></section>
+<section class="card" id="sim" aria-live="polite"></section>
+</main><script>
+const C=['#1D4ED8','#C2410C','#047857','#7A1FB8'],G='#64748B',$=i=>document.getElementById(i);
+const f=x=>String(+(+x).toPrecision(5)),sum=a=>a.reduce((p,c)=>p+c,0),mean=a=>sum(a)/a.length;
+const num=s=>s.split(/[\s,;]+/).filter(Boolean).map(Number),rows=s=>s.trim().split('\n').map(num).filter(r=>r.length),col=l=>l<0?G:C[l%4];
+const chip=(n,j)=>`<span class="chip c${j%4}">${n}</span>`;
+const tab=(h,r,w)=>`<div class="sc"><table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.map((a,i)=>`<tr${w&&w(i)?' class="win"':''}>${a.map(x=>`<td>${typeof x=='number'?f(x):x}</td>`).join('')}</tr>`).join('')}</table></div>`;
+const gauss=(A,b)=>{const n=b.length,M=A.map((r,i)=>[...r,b[i]]);for(let i=0;i<n;i++){let p=i;for(let r=i+1;r<n;r++)if(Math.abs(M[r][i])>Math.abs(M[p][i]))p=r;[M[i],M[p]]=[M[p],M[i]];if(Math.abs(M[i][i])<1e-12)throw'These points cannot be solved. Try a lower degree or add more points.';for(let r=0;r<n;r++)if(r!=i){const t=M[r][i]/M[i][i];for(let c=i;c<=n;c++)M[r][c]-=t*M[i][c]}}return M.map((r,i)=>r[n]/r[i])};
+function plot(o){const P=o.pts||[],M=o.marks||[],cv=o.curve||[],L=o.lines||[],all=[...P,...M,...cv],xs=all.map(a=>a[0]),ys=all.map(a=>a[1]);L.forEach(l=>{xs.push(l[0],l[2]);ys.push(l[1],l[3])});
+const a=Math.min(...xs),b=Math.max(...xs),c=Math.min(...ys),d=Math.max(...ys),px=(b-a||1)*.12,py=(d-c||1)*.15,x0=a-px,x1=b+px,y0=c-py,y1=d+py,W=600,H=330,m=44,X=v=>m+(v-x0)/(x1-x0)*(W-2*m),Y=v=>H-m-(v-y0)/(y1-y0)*(H-2*m);
+let g=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Chart of the current step"><rect x="${m}" y="10" width="${W-2*m}" height="${H-m-10}" fill="#FAFCFE" stroke="#C5D1E0"/>`;
+for(let i=0;i<=4;i++){const vx=x0+(x1-x0)*i/4,vy=y0+(y1-y0)*i/4;g+=`<text x="${X(vx)}" y="${H-m+20}" text-anchor="middle" font-size="13">${f(+vx.toFixed(2))}</text><text x="${m-6}" y="${Y(vy)+4}" text-anchor="end" font-size="13">${f(+vy.toFixed(2))}</text>`}
+(o.circ||[]).forEach(([x,y,r,k])=>g+=`<ellipse cx="${X(x)}" cy="${Y(y)}" rx="${r/(x1-x0)*(W-2*m)}" ry="${r/(y1-y0)*(H-2*m)}" fill="${k}22" stroke="${k}" stroke-width="1.5" stroke-dasharray="5 4"/>`);
+if(cv.length)g+=`<polyline fill="none" stroke="#0B6B4F" stroke-width="3" points="${cv.map(p=>X(p[0])+','+Y(p[1])).join(' ')}"/>`;
+L.forEach(l=>g+=`<line x1="${X(l[0])}" y1="${Y(l[1])}" x2="${X(l[2])}" y2="${Y(l[3])}" stroke="${l[4]||'#0B6B4F'}" stroke-width="3"/>`);
+P.forEach(p=>g+=`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${p[3]||7}" fill="${col(p[2]||0)}" stroke="#fff" stroke-width="1.5"/>`+(p[4]?`<text x="${X(p[0])+9}" y="${Y(p[1])-9}" font-size="13">${p[4]}</text>`:''));
+M.forEach(p=>g+=`<path d="M${X(p[0])-9} ${Y(p[1])-9}l18 18m0-18l-18 18" stroke="${p[3]||col(p[2])}" stroke-width="5"/>`);
+return g+'</svg>'}
+const cl=(v,med)=>{const D=rows(v.d).filter(r=>r.length>=2),n=D.length,k=Math.round(+v.k);if(n<2||!(k>=1&&k<=n))throw'Enter at least 2 points and a k between 1 and the number of points.';
+const d=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]),W=med?'medoid':'centre',Z=med?'M':'C';let cen=D.slice(0,k).map(r=>[r[0],r[1]]),lab=[],st=[];
+st.push({h:'Choose the starting '+W+'s',t:`We need ${k} cluster${k>1?'s':''}, so the first ${k} point${k>1?'s are':' is'} used as the starting ${W}s (marked with X): ${cen.map((c,j)=>`${Z}${j+1} = (${c[0]}, ${c[1]})`).join(', ')}.`,s:plot({pts:D.map(r=>[r[0],r[1],-1]),marks:cen.map((c,j)=>[c[0],c[1],j])})});
+for(let it=1;it<=10;it++){const ds=D.map(r=>cen.map(c=>d(r,c))),nl=ds.map(a=>a.indexOf(Math.min(...a)));
+const nc=cen.map((c,j)=>{const m=D.filter((r,i)=>nl[i]==j);if(!m.length)return c;if(!med)return[mean(m.map(a=>a[0])),mean(m.map(a=>a[1]))];let best=m[0],bs=1e99;m.forEach(a=>{const s=sum(m.map(b=>d(a,b)));if(s<bs){bs=s;best=a}});return[best[0],best[1]]});
+const stop=nc.every((c,j)=>c[0]==cen[j][0]&&c[1]==cen[j][1]);lab=nl;
+st.push({h:`Round ${it}: assign each point, then update`,f:'distance = √( (x₁ − x₂)² + (y₁ − y₂)² )',t:`Each point joins the nearest ${W} (the smallest distance). Then each ${W} moves: ${med?'it becomes the point in its group with the smallest total distance to the others':'it becomes the average of its group'}. New ${W}s: ${nc.map((c,j)=>`${Z}${j+1} = (${f(c[0])}, ${f(c[1])})`).join(', ')}. ${stop?'Nothing moved, so we stop.':'They moved, so we repeat.'}`,
+tb:tab(['Point',...cen.map((c,j)=>'Distance to '+Z+(j+1)),'Cluster'],D.map((r,i)=>[`(${r[0]}, ${r[1]})`,...ds[i],'Cluster '+(nl[i]+1)])),s:plot({pts:D.map((r,i)=>[r[0],r[1],nl[i]]),marks:nc.map((c,j)=>[c[0],c[1],j])})});cen=nc;if(stop)break}
+return{steps:st,fin:`<p>${cen.map((c,j)=>`<b>Cluster ${j+1}</b> (${W} = (${f(c[0])}, ${f(c[1])})): ${D.filter((r,i)=>lab[i]==j).map(r=>`(${r[0]}, ${r[1]})`).join(', ')||'no points'}`).join('<br>')}</p>`}};
+const A=[
+{n:'Simple Linear Regression',i:'📈',goal:'Find the straight line y = m·x + b that is closest to your points, then use it to predict a new value.',
+F:[['d','Data points: x, y (one pair on each line)','1,35\n2,40\n3,50\n4,55\n5,60\n6,65\n7,70\n8,78\n9,85','ta'],['q','Predict y for this x','10','in']],
+S(v){const D=rows(v.d).filter(r=>r.length>=2),n=D.length;if(n<2)throw'Please enter at least 2 lines, each with x and y.';
+const x=D.map(r=>r[0]),y=D.map(r=>r[1]),mx=mean(x),my=mean(y),dx=x.map(a=>a-mx),dy=y.map(a=>a-my),sxy=sum(dx.map((a,i)=>a*dy[i])),sxx=sum(dx.map(a=>a*a));
+if(!sxx)throw'All x values are the same, so no line can be drawn.';
+const m=sxy/sxx,b=my-m*mx,pr=x.map(a=>m*a+b),ssr=sum(y.map((a,i)=>(a-pr[i])**2)),sst=sum(dy.map(a=>a*a)),r2=sst?1-ssr/sst:1,q=+v.q,pts=D.map(r=>[r[0],r[1],0]),x0=Math.min(...x),x1=Math.max(...x),ln=[[x0,m*x0+b],[x1,m*x1+b]];
+return{steps:[
+{h:'Find the averages',f:'x̄ = Σx ÷ n,   ȳ = Σy ÷ n',t:`There are n = ${n} points. x̄ = ${f(mx)} and ȳ = ${f(my)}. The best line always passes through (x̄, ȳ).`,s:plot({pts})},
+{h:'Find the slope m',f:'m = Σ(x − x̄)(y − ȳ) ÷ Σ(x − x̄)²',t:`Add the last two columns: Σ(x − x̄)(y − ȳ) = ${f(sxy)} and Σ(x − x̄)² = ${f(sxx)}. So m = ${f(sxy)} ÷ ${f(sxx)} = <b>${f(m)}</b>.`,tb:tab(['x','y','x − x̄','y − ȳ','(x−x̄)(y−ȳ)','(x−x̄)²'],x.map((a,i)=>[a,y[i],dx[i],dy[i],dx[i]*dy[i],dx[i]**2]))},
+{h:'Find the intercept b',f:'b = ȳ − m × x̄',t:`b = ${f(my)} − ${f(m)} × ${f(mx)} = <b>${f(b)}</b>. The line is y = ${f(m)}x + ${f(b)}.`,s:plot({pts,curve:ln})},
+{h:'Check the fit with R²',f:'R² = 1 − Σ(y − ŷ)² ÷ Σ(y − ȳ)²',t:`Σ(y − ŷ)² = ${f(ssr)} and Σ(y − ȳ)² = ${f(sst)}. So R² = <b>${f(r2)}</b>. The closer to 1, the better the line fits.`,tb:tab(['x','y','ŷ = m·x + b','Error y − ŷ'],x.map((a,i)=>[a,y[i],pr[i],y[i]-pr[i]]))},
+...(isFinite(q)&&v.q.trim()?[{h:'Predict a new value',f:'ŷ = m × x + b',t:`For x = ${f(q)}: ŷ = ${f(m)} × ${f(q)} + ${f(b)} = <b>${f(m*q+b)}</b>.`,s:plot({pts,curve:ln,marks:[[q,m*q+b,2]]})}]:[])],
+fin:`<p><b>y = ${f(m)}·x + ${f(b)}</b> with R² = ${f(r2)}.${isFinite(q)&&v.q.trim()?` For x = ${f(q)} the predicted y is <b>${f(m*q+b)}</b>.`:''}</p>`}}},
+{n:'Polynomial Regression',i:'🌀',goal:'Fit a curve (y = w₀ + w₁x + w₂x² …) when the points are not on a straight line.',
+F:[['d','Data points: x, y (one pair on each line)','1,35\n2,40\n3,50\n4,65\n5,80\n6,95\n7,110\n8,130','ta'],['g','Degree (1 to 4)','2','in'],['q','Predict y for this x','9','in']],
+S(v){const D=rows(v.d).filter(r=>r.length>=2),n=D.length,g=Math.round(+v.g);if(!(g>=1&&g<=4)||n<g+1)throw'Degree must be 1 to 4, and you need at least degree + 1 points.';
+const x=D.map(r=>r[0]),y=D.map(r=>r[1]),X=x.map(a=>Array.from({length:g+1},(_,j)=>a**j)),XT=X[0].map((_,j)=>X.map(r=>r[j])),N=XT.map(r=>XT.map(c=>sum(r.map((a,i)=>a*c[i])))),R=XT.map(r=>sum(r.map((a,i)=>a*y[i]))),w=gauss(N,R),
+ev=t=>sum(w.map((c,j)=>c*t**j)),my=mean(y),ssr=sum(x.map((a,i)=>(y[i]-ev(a))**2)),sst=sum(y.map(a=>(a-my)**2)),r2=sst?1-ssr/sst:1,x0=Math.min(...x),x1=Math.max(...x),cv=Array.from({length:50},(_,i)=>{const t=x0+(x1-x0)*i/49;return[t,ev(t)]}),pts=D.map(r=>[r[0],r[1],0]),q=+v.q,hd=Array.from({length:g+1},(_,j)=>'x<sup>'+j+'</sup>'),eq=w.map((c,j)=>`${f(c)}${j?'x'+(j>1?'<sup>'+j+'</sup>':''):''}`).join(' + ');
+return{steps:[
+{h:'Make the new columns',f:'Each row becomes [1, x, x², … x'+(g>1?'<sup>'+g+'</sup>':'')+']',t:'A curve is a straight-line problem in disguise: we add powers of x as extra columns.',tb:tab(hd,X.slice(0,8)),s:plot({pts})},
+{h:'Write the normal equations',f:'(XᵀX) · w = Xᵀy',t:'Multiply the columns together and add them up. The table shows XᵀX on the left and Xᵀy in the last column.',tb:tab([...hd.map(h=>'Σ with '+h),'Xᵀy'],N.map((r,i)=>[...r,R[i]]))},
+{h:'Solve for the weights w',f:'w = (XᵀX)⁻¹ · Xᵀy',t:`Solving the equations gives ${w.map((c,j)=>`w<sub>${j}</sub> = <b>${f(c)}</b>`).join(', ')}. The curve is y = ${eq}.`,s:plot({pts,curve:cv})},
+{h:'Check the fit with R²',f:'R² = 1 − Σ(y − ŷ)² ÷ Σ(y − ȳ)²',t:`R² = <b>${f(r2)}</b>. The closer to 1, the better the curve fits.`,tb:tab(['x','y','ŷ'],x.map((a,i)=>[a,y[i],ev(a)]))},
+...(isFinite(q)&&v.q.trim()?[{h:'Predict a new value',f:'ŷ = w₀ + w₁x + w₂x² …',t:`For x = ${f(q)}, ŷ = <b>${f(ev(q))}</b>.`,s:plot({pts,curve:cv,marks:[[q,ev(q),2]]})}]:[])],
+fin:`<p><b>y = ${eq}</b> with R² = ${f(r2)}.</p>`}}},
+{n:'Logistic Regression',i:'🎯',goal:'Learn the chance (0 to 1) that something happens, such as pass or fail, using the S-shaped sigmoid curve.',
+F:[['d','Data: x, y where y is 0 (no) or 1 (yes)','1,0\n2,0\n3,0\n4,1\n5,0\n6,1\n7,1\n8,1','ta'],['l','Learning rate','0.1','in'],['e','Number of rounds (1 to 2000)','300','in'],['q','Predict the chance for this x','4.5','in']],
+S(v){const D=rows(v.d).filter(r=>r.length>=2),n=D.length,lr=+v.l,E=Math.round(+v.e);if(n<2||D.some(r=>r[1]!=0&&r[1]!=1))throw'Each line must be x, y where y is 0 or 1.';if(!(lr>0&&lr<=1&&E>=1&&E<=2000))throw'Learning rate must be above 0 and at most 1. Rounds must be 1 to 2000.';
+const x=D.map(r=>r[0]),y=D.map(r=>r[1]),sg=z=>1/(1+Math.exp(-z)),L=(w,b)=>-mean(x.map((a,i)=>{const p=sg(w*a+b);return Math.log(y[i]?p+1e-12:1-p+1e-12)}));let w=0,b=0,H=[],fst;
+for(let e=1;e<=E;e++){const p=x.map(a=>sg(w*a+b)),dw=mean(p.map((a,i)=>(a-y[i])*x[i])),db=mean(p.map((a,i)=>a-y[i]));if(e==1)fst={dw,db,w:-lr*dw,b:-lr*db};w-=lr*dw;b-=lr*db;if([1,2,5,10,25,50,100,200,500,1000,2000].includes(e)||e==E)H.push([e,w,b,L(w,b)])}
+const x0=Math.min(...x),x1=Math.max(...x),cv=Array.from({length:50},(_,i)=>{const t=x0+(x1-x0)*i/49;return[t,sg(w*t+b)]}),pts=D.map(r=>[r[0],r[1],r[1]]),q=+v.q;
+return{steps:[
+{h:'Start with the sigmoid',f:'p = 1 ÷ (1 + e<sup>−z</sup>),   z = w × x + b',t:'The sigmoid turns any number z into a chance between 0 and 1. We start with w = 0 and b = 0, so z = 0 and every point gets p = 0.5 (a coin flip).',tb:tab(['x','y','z','p'],x.map((a,i)=>[a,y[i],0,0.5])),s:plot({pts,curve:x.map(a=>[a,.5])})},
+{h:'First update (gradient descent)',f:'w ← w − rate × mean((p − y) × x),   b ← b − rate × mean(p − y)',t:`Using p = 0.5 for all points: mean((p − y) × x) = ${f(fst.dw)} and mean(p − y) = ${f(fst.db)}. So w = 0 − ${lr} × ${f(fst.dw)} = <b>${f(fst.w)}</b> and b = <b>${f(fst.b)}</b>. We repeat this ${E} times.`},
+{h:'Watch the learning',f:'loss = −mean( y × ln p + (1 − y) × ln(1 − p) )',t:'The loss tells how wrong the model is. It should go down as the rounds go on. The green curve is the final sigmoid.',tb:tab(['Round','w','b','Loss'],H),s:plot({pts,curve:cv})},
+...(isFinite(q)&&v.q.trim()?[{h:'Predict a new value',f:'p = sigmoid(w × x + b)',t:`For x = ${f(q)}: z = ${f(w)} × ${f(q)} + ${f(b)} = ${f(w*q+b)}, so p = <b>${f(sg(w*q+b))}</b>. Since p ${sg(w*q+b)>=.5?'≥':'<'} 0.5, the answer is <b>${sg(w*q+b)>=.5?'Yes (1)':'No (0)'}</b>.`,s:plot({pts,curve:cv,marks:[[q,sg(w*q+b),2]]})}]:[])],
+fin:`<p>After ${E} rounds: <b>p = sigmoid(${f(w)}·x + ${f(b)})</b>.${isFinite(q)&&v.q.trim()?` For x = ${f(q)} the chance is <b>${f(sg(w*q+b))}</b>.`:''}</p>`}}},
+{n:'k-Nearest Neighbours',i:'📍',goal:'Classify a new point by looking at its k closest neighbours and letting them vote.',
+F:[['d','Data: x, y, class (0, 1 or 2)','1,1,0\n2,1,0\n1,2,0\n2,2,0\n6,5,1\n7,6,1\n6,6,1\n8,5,1','ta'],['q','New point: x, y','4,4','in'],['k','k (number of neighbours)','3','in']],
+S(v){const D=rows(v.d).filter(r=>r.length>=3),n=D.length,q=num(v.q),k=Math.round(+v.k);if(q.length<2||!q.every(isFinite))throw'Enter the new point as x, y.';if(!(k>=1&&k<=n))throw'k must be between 1 and the number of data points.';
+const sd=D.map(r=>[r,Math.hypot(r[0]-q[0],r[1]-q[1])]).sort((a,b)=>a[1]-b[1]),nr=sd.slice(0,k),cnt={};nr.forEach(a=>cnt[a[0][2]]=(cnt[a[0][2]]||0)+1);const mx=Math.max(...Object.values(cnt)),win=nr.find(a=>cnt[a[0][2]]==mx)[0][2],pts=D.map(r=>[r[0],r[1],r[2]]),mk=[[q[0],q[1],0,'#0B1220']];
+return{steps:[
+{h:'Measure the distance to every point',f:'distance = √( (x₁ − x₂)² + (y₁ − y₂)² )',t:`The new point is (${q[0]}, ${q[1]}), marked with a black X. The table lists every point from nearest to farthest.`,tb:tab(['Rank','Point','Class','Distance'],sd.map((a,i)=>[i+1,`(${a[0][0]}, ${a[0][1]})`,a[0][2],a[1]])),s:plot({pts,marks:mk})},
+{h:`Keep the ${k} nearest`,t:`The first ${k} row${k>1?'s':''} of the table are the neighbours (highlighted). The dashed circle reaches the farthest of them.`,tb:tab(['Rank','Point','Class','Distance'],nr.map((a,i)=>[i+1,`(${a[0][0]}, ${a[0][1]})`,a[0][2],a[1]]),()=>1),s:plot({pts,marks:mk,circ:[[q[0],q[1],nr[k-1][1],'#0B1220']]})},
+{h:'Let the neighbours vote',f:'class = the most common class among the k neighbours',t:`Votes: ${Object.entries(cnt).map(([c,m])=>`class ${c} has ${m}`).join(', ')}. The winner is <b>class ${win}</b>.`,s:plot({pts:[...pts,[q[0],q[1],+win,10]],circ:[[q[0],q[1],nr[k-1][1],col(+win)]]})}],
+fin:`<p>The new point (${q[0]}, ${q[1]}) belongs to <b>class ${win}</b> (k = ${k}).</p>`}}},
+{n:'K-Means Clustering',i:'🎨',goal:'Group points into k clusters by moving cluster centres until they stop changing.',
+F:[['d','Data points: x, y (one pair on each line)','1,1\n1.5,2\n3,4\n5,7\n3.5,5\n4.5,5\n3.5,4.5','ta'],['k','k (number of clusters)','2','in']],S:v=>cl(v,0)},
+{n:'K-Medoids Clustering',i:'🎯',goal:'Like K-Means, but each cluster is led by a real data point (a medoid). It copes better with outliers.',
+F:[['d','Data points: x, y (one pair on each line)','1,1\n1.5,2\n3,4\n5,7\n3.5,5\n4.5,5\n3.5,4.5\n9,12','ta'],['k','k (number of clusters)','2','in']],S:v=>cl(v,1)},
+{n:'DBSCAN',i:'🔵',goal:'Find dense groups of points and mark lonely points as noise, without choosing the number of clusters.',
+F:[['d','Data points: x, y (one pair on each line)','1,1\n2,1\n3,1\n7,5\n8,5\n9,5\n12,9','ta'],['e','eps (neighbour distance)','1','in'],['m','minPts (points needed, including itself)','3','in']],
+S(v){const D=rows(v.d).filter(r=>r.length>=2),n=D.length,e=+v.e,mp=Math.round(+v.m);if(n<2||!(e>0)||!(mp>=1))throw'Enter at least 2 points, eps above 0 and minPts of 1 or more.';
+const nm=i=>n>26?'P'+(i+1):String.fromCharCode(65+i),nb=D.map(r=>D.map((q,j)=>j).filter(j=>Math.hypot(r[0]-D[j][0],r[1]-D[j][1])<=e+1e-9)),core=nb.map(a=>a.length>=mp),lab=Array(n).fill(-1);let c=0;
+for(let i=0;i<n;i++){if(lab[i]!=-1||!core[i])continue;const q=[i];lab[i]=c;while(q.length){const a=q.shift();if(!core[a])continue;nb[a].forEach(b=>{if(lab[b]==-1){lab[b]=c;q.push(b)}})}c++}
+const ty=i=>lab[i]<0?'Noise':core[i]?'Core':'Border',pt=l=>D.map((r,i)=>[r[0],r[1],l(i),7,nm(i)]);
+return{steps:[
+{h:'Count the neighbours of each point',f:'neighbours of P = all points within distance eps of P (P counts itself)',t:`eps = ${e}, minPts = ${mp}. A point with at least ${mp} points in its circle (itself included) is a <b>core</b> point.`,tb:tab(['Point','Neighbours','Count','Core?'],D.map((r,i)=>[nm(i),nb[i].map(nm).join(', '),nb[i].length,core[i]?'Yes':'No']),i=>core[i]),s:plot({pts:pt(()=>-1),circ:D.map((r,i)=>core[i]?[r[0],r[1],e,G]:null).filter(Boolean)})},
+{h:'Grow the clusters',f:'start at a core point, then keep adding the neighbours of core points',t:c?Array.from({length:c},(_,j)=>`<b>Cluster ${j+1}</b>: ${D.map((r,i)=>i).filter(i=>lab[i]==j).map(nm).join(', ')}`).join('<br>'):'No core point was found, so there are no clusters.',s:plot({pts:pt(i=>lab[i]),circ:D.map((r,i)=>core[i]?[r[0],r[1],e,col(lab[i])]:null).filter(Boolean)})},
+{h:'Name each point',f:'Core: enough neighbours.  Border: near a core point.  Noise: neither.',t:'Border points sit on the edge of a cluster. Noise points are marked in grey.',tb:tab(['Point','Cluster','Type'],D.map((r,i)=>[nm(i),lab[i]<0?'Noise':lab[i]+1,ty(i)]),i=>lab[i]<0),s:plot({pts:pt(i=>lab[i])})}],
+fin:`<p>DBSCAN found <b>${c} cluster${c==1?'':'s'}</b> and <b>${lab.filter(a=>a<0).length} noise point${lab.filter(a=>a<0).length==1?'':'s'}</b>.</p>`}}},
+{n:'AdaBoost',i:'🚀',goal:'Combine many weak one-split stumps. After each round, wrong points get bigger weights so the next stump pays attention to them.',
+F:[['d','Data: x, label (1 or −1)','1,1\n2,1\n3,1\n4,-1\n5,-1\n6,-1\n7,1\n8,1\n9,-1\n10,-1','ta'],['t','Rounds (1 to 10)','3','in']],
+S(v){const D=rows(v.d).filter(r=>r.length>=2),n=D.length,T=Math.round(+v.t);if(n<3||!(T>=1&&T<=10))throw'Enter at least 3 lines (x, label) and 1 to 10 rounds.';
+const x=D.map(r=>r[0]),y=D.map(r=>r[1]>0?1:-1),u=[...new Set(x)].sort((a,b)=>a-b);if(u.length<2)throw'Use at least 2 different x values.';
+const th=u.slice(1).map((a,i)=>(a+u[i])/2),h=(t,s,a)=>s*(a>t?1:-1);let w=Array(n).fill(1/n);const st=[],al=[],hs=[];
+for(let r=1;r<=T;r++){let bs=null;th.forEach(t=>[1,-1].forEach(s=>{const e=sum(x.map((a,i)=>h(t,s,a)!=y[i]?w[i]:0));if(!bs||e<bs.e-1e-12)bs={t,s,e}}));
+const e=Math.min(Math.max(bs.e,1e-10),1-1e-10),a=.5*Math.log((1-e)/e),pr=x.map(q=>h(bs.t,bs.s,q)),nw=w.map((q,i)=>q*Math.exp(-a*y[i]*pr[i])),z=sum(nw),nn=nw.map(q=>q/z);
+st.push({h:`Round ${r}: build stump ${r}`,f:'ε = total weight of wrong points,   α = ½ × ln( (1 − ε) ÷ ε ),   new weight = old × e<sup>−α·y·h</sup> ÷ total',t:`Best stump: say <b>${bs.s>0?'+1':'−1'}</b> when x &gt; ${f(bs.t)}, otherwise ${bs.s>0?'−1':'+1'}. Its error ε = ${f(e)}, so its say α = <b>${f(a)}</b>. Wrong points get heavier. In the chart, big dots have big weights and the green line is the stump.`,
+tb:tab(['x','Label','Weight now','Stump says','Right?','New weight'],x.map((q,i)=>[q,y[i],w[i],pr[i],pr[i]==y[i]?'Yes':'No',nn[i]]),i=>pr[i]!=y[i]),s:plot({pts:x.map((q,i)=>[q,w[i],y[i]>0?0:1,5+w[i]*n*3]),lines:[[bs.t,0,bs.t,Math.max(...w)*1.15]]})});al.push(a);hs.push([bs.t,bs.s]);w=nn}
+const sc=x.map(q=>sum(al.map((a,r)=>a*h(hs[r][0],hs[r][1],q)))),ok=sc.filter((s,i)=>(s>=0?1:-1)==y[i]).length;
+st.push({h:'Combine the stumps with a weighted vote',f:'final answer = sign( α₁h₁(x) + α₂h₂(x) + … )',t:`Each stump votes ±1, multiplied by its α. A positive total means +1, a negative total means −1. Correct: <b>${ok} of ${n}</b>.`,tb:tab(['x','Label','Total score','Answer','Right?'],x.map((q,i)=>[q,y[i],sc[i],(sc[i]>=0?'+1':'−1'),(sc[i]>=0?1:-1)==y[i]?'Yes':'No']),i=>(sc[i]>=0?1:-1)!=y[i]),s:plot({pts:x.map((q,i)=>[q,sc[i],y[i]>0?0:1]),lines:[[Math.min(...x),0,Math.max(...x),0,'#64748B']]})});
+return{steps:st,fin:`<p>${T} stump${T>1?'s':''} combined classify <b>${ok} of ${n}</b> points correctly (${f(ok/n*100)}%).</p>`}}},
+{n:'Hidden Markov Model',i:'🌦️',goal:'Forward finds the chance of seeing a whole sequence. Viterbi finds the most likely hidden sequence behind it.',
+F:[['s','Hidden states (2 to 4, comma separated)','Rainy, Sunny','in'],['o','Observations we can see (2 to 5)','Walk, Shop, Clean','in'],['q','Observation sequence (1 to 8 days)','Walk, Shop, Clean','in'],['p','Start chances π (one row, adds up to 1)','0.6, 0.4','in'],['a','Change chances A (one row per state)','0.7, 0.3\n0.4, 0.6','ta'],['b','See chances B (one row per state)','0.1, 0.4, 0.5\n0.6, 0.3, 0.1','ta']],
+S(v){const ls=s=>s.split(',').map(a=>a.trim()).filter(Boolean),S=ls(v.s),O=ls(v.o),sq=ls(v.q),N=S.length,M=O.length;
+if(N<2||N>4)throw'Please enter 2 to 4 hidden states.';if(M<2||M>5)throw'Please enter 2 to 5 observation names.';if(sq.length<1||sq.length>8)throw'Please enter 1 to 8 days in the observation sequence.';
+const q=sq.map(t=>{const k=O.findIndex(o=>o.toLowerCase()==t.toLowerCase());if(k<0)throw`“${t}” is not in your observation list. Check the spelling.`;return k}),T=q.length;
+const pi=num(v.p),A=rows(v.a),B=rows(v.b),chk=(n,r,len)=>{if(r.length!=len||r.some(a=>!isFinite(a)||a<0)||Math.abs(sum(r)-1)>.001)throw`${n} must be ${len} numbers from 0 to 1 that add up to 1. Right now they add up to ${f(sum(r.filter(isFinite)))}.`};
+chk('Start chances',pi,N);if(A.length!=N||B.length!=N)throw'A and B need one row for each hidden state.';A.forEach((r,i)=>chk('Row '+S[i]+' of A',r,N));B.forEach((r,i)=>chk('Row '+S[i]+' of B',r,M));
+const st=[],al=[S.map((_,i)=>pi[i]*B[i][q[0]])],de=[al[0].slice()],ps=[],ch=j=>chip(S[j],j),am=a=>a.indexOf(Math.max(...a));
+st.push({h:'Forward, day 1',f:'α₁(i) = π(i) × B(i, o₁)',t:`We saw <b>${O[q[0]]}</b>. There is no yesterday, so multiply the start chance by the chance of seeing ${O[q[0]]}.`,tb:tab(['State','π(i)','B(i, '+O[q[0]]+')','α₁'],S.map((s,i)=>[ch(i),pi[i],B[i][q[0]],al[0][i]]))});
+for(let t=1;t<T;t++){al[t]=S.map((_,j)=>sum(S.map((_,i)=>al[t-1][i]*A[i][j]))*B[j][q[t]]);
+st.push({h:`Forward, day ${t+1}`,f:'α<sub>t</sub>(j) = [ Σ α<sub>t−1</sub>(i) × A(i, j) ] × B(j, o<sub>t</sub>)',t:`We saw <b>${O[q[t]]}</b>. Here t = ${t+1}, so yesterday t − 1 = ${t}. For each state j: multiply yesterday’s α by A(i, j), add, then multiply by B.`,tb:tab(['State j','Σ α × A','Sum','× B(j, '+O[q[t]]+')','α'],S.map((s,j)=>[ch(j),S.map((_,i)=>`${f(al[t-1][i])}×${A[i][j]}`).join(' + '),sum(S.map((_,i)=>al[t-1][i]*A[i][j])),B[j][q[t]],al[t][j]]))})}
+const tot=sum(al[T-1]);
+for(let t=1;t<T;t++){de[t]=[];ps[t]=[];const cs=[];S.forEach((_,j)=>{const c=S.map((_,i)=>de[t-1][i]*A[i][j]),bi=am(c);ps[t][j]=bi;de[t][j]=c[bi]*B[j][q[t]];cs.push([ch(j),c.map((x,i)=>`${S[i]}: ${f(x)}`).join(' | '),`${f(c[bi])} from ${S[bi]}`,B[j][q[t]],de[t][j]])});
+st.push({h:`Viterbi, day ${t+1}`,f:'δ<sub>t</sub>(j) = max<sub>i</sub> [ δ<sub>t−1</sub>(i) × A(i, j) ] × B(j, o<sub>t</sub>)',t:`Day 1 is the same as Forward. From day 2 we do <b>not add</b>. We keep only the biggest product and remember where it came from (ψ).`,tb:tab(['State j','Products δ × A','Biggest (ψ)','× B','δ'],cs)})}
+const last=am(de[T-1]),path=[last];for(let t=T-1;t>0;t--)path.unshift(ps[t][path[0]]);
+st.push({h:'Viterbi: pick the winner and backtrack',f:'P* = max δ<sub>T</sub>(i), then follow ψ backwards',t:`On the last day the biggest δ is ${f(de[T-1][last])} on ${ch(last)}. Following the saved ψ values backwards gives the path: ${path.map(ch).join(' → ')}`,tb:tab(['State','δ on last day','Winner?'],S.map((s,i)=>[ch(i),de[T-1][i],i==last?'Yes':'No']),i=>i==last)});
+return{steps:st,fin:`<h3>1. Forward answer</h3><p>Add the α values on the last day: ${al[T-1].map(f).join(' + ')} = <b>${f(tot)}</b>.<br><b>P(O | λ) = ${f(tot)}</b>, the chance of seeing this whole sequence.</p><h3>2. Viterbi answer</h3><p>Most likely hidden sequence: <b>${path.map(ch).join(' → ')}</b><br>Probability of this best path: <b>P* = ${f(de[T-1][last])}</b></p><p>Why are the numbers different? Forward counts all paths together. Viterbi counts only the one best path, so P* is never bigger than P(O | λ).</p>`}}}];
+const bf=(x,y)=>{const mx=mean(x),my=mean(y),m=sum(x.map((a,i)=>(a-mx)*(y[i]-my)))/(sum(x.map(a=>(a-mx)**2))||1);return[m,my-m*mx]};
+const km=(D,k,med)=>{const d=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);let c=D.slice(0,k).map(r=>[r[0],r[1]]),l=[];for(let i=0;i<20;i++){l=D.map(r=>{const q=c.map(z=>d(r,z));return q.indexOf(Math.min(...q))});c=c.map((z,j)=>{const m=D.filter((r,i)=>l[i]==j);if(!m.length)return z;if(!med)return[mean(m.map(a=>a[0])),mean(m.map(a=>a[1]))];return m.reduce((p,a)=>sum(m.map(b=>d(a,b)))<sum(m.map(b=>d(p,b)))?a:p).slice(0,2)})}return[l,c,sum(D.map((r,i)=>d(r,c[l[i]])))]};
+const ksim=med=>({e:med?'Choosing the best real shop location to serve each area.':'Grouping shop customers by how much they buy and how often.',t:med?'Change k. Then slide the outlier away. The X always sits on a real point, so it usually moves less than in K-Means.':'Change k to make more or fewer groups. Then slide the outlier away and watch how far it drags the X (centre).',c:D=>[['k','k (number of clusters)',1,Math.min(6,D.length),1,2],['o','Outlier distance (0 = no outlier)',0,30,1,0]],d:(D,v)=>{const P=v.o>0?[...D,[Math.max(...D.map(r=>r[0]))+v.o,Math.max(...D.map(r=>r[1]))+v.o]]:D,[l,c,s]=km(P,Math.min(v.k,P.length),med);return{s:plot({pts:P.map((r,i)=>[r[0],r[1],l[i]]),marks:c.map((z,j)=>[z[0],z[1],j])}),t:`Total distance from every point to its ${med?'medoid':'centre'}: <b>${f(s)}</b>. Smaller means tighter groups.`}}});
+const SIM=[
+{e:'Predicting exam marks from study hours.',t:'Move both sliders to make the red error sticks as short as you can. The green line is the best possible line.',c:D=>{const[m,b]=bf(D.map(r=>r[0]),D.map(r=>r[1])),r=Math.abs(m)*2+1,s=Math.abs(b)+Math.abs(m)*10+5;return[['m','Slope m',m-r,m+r,.01,m-r*.7],['b','Intercept b',b-s,b+s,.1,b+s*.7]]},d:(D,v)=>{const x=D.map(r=>r[0]),y=D.map(r=>r[1]),[bm,bb]=bf(x,y),e=(m,b)=>sum(x.map((p,i)=>(y[i]-m*p-b)**2)),x0=Math.min(...x),x1=Math.max(...x),L=(m,b,c)=>[x0,m*x0+b,x1,m*x1+b,c];return{s:plot({pts:D.map(r=>[r[0],r[1],0]),lines:[...x.map((p,i)=>[p,y[i],p,v.m*p+v.b,'#B00020']),L(v.m,v.b,'#1D4ED8'),L(bm,bb,'#0B6B4F')]}),t:`Your total error (sum of squared sticks) = <b>${f(e(v.m,v.b))}</b>. The best line has <b>${f(e(bm,bb))}</b>.`}}},
+{e:'Sales that grow faster and faster every month.',t:'Raise the degree. A higher degree bends more, but too high can chase every dot instead of the real pattern.',c:()=>[['g','Degree',1,4,1,1]],d:(D,v)=>{const g=Math.min(v.g,D.length-1),x=D.map(r=>r[0]),y=D.map(r=>r[1]),X=x.map(a=>Array.from({length:g+1},(_,j)=>a**j)),XT=X[0].map((_,j)=>X.map(r=>r[j])),w=gauss(XT.map(r=>XT.map(c=>sum(r.map((a,i)=>a*c[i])))),XT.map(r=>sum(r.map((a,i)=>a*y[i])))),ev=t=>sum(w.map((c,j)=>c*t**j)),x0=Math.min(...x),x1=Math.max(...x),my=mean(y),r2=1-sum(x.map((a,i)=>(y[i]-ev(a))**2))/(sum(y.map(a=>(a-my)**2))||1);return{s:plot({pts:D.map(r=>[r[0],r[1],0]),curve:Array.from({length:50},(_,i)=>{const t=x0+(x1-x0)*i/49;return[t,ev(t)]})}),t:`Degree ${g}: R² = <b>${f(r2)}</b>. Closer to 1 means the curve is closer to the dots.`}}},
+{e:'The chance of passing an exam from hours studied.',t:'Move w to make the S-curve steeper and b to slide it left or right. Try to get the lowest loss.',c:()=>[['w','w (steepness)',-3,3,.05,0],['b','b (shift)',-15,15,.1,0]],d:(D,v)=>{const x=D.map(r=>r[0]),y=D.map(r=>r[1]),sg=z=>1/(1+Math.exp(-z)),x0=Math.min(...x),x1=Math.max(...x),L=-mean(x.map((a,i)=>{const p=sg(v.w*a+v.b);return Math.log(y[i]?p+1e-12:1-p+1e-12)}));return{s:plot({pts:D.map(r=>[r[0],r[1],r[1]]),curve:Array.from({length:50},(_,i)=>{const t=x0+(x1-x0)*i/49;return[t,sg(v.w*t+v.b)]})}),t:`Loss = <b>${f(L)}</b>. Lower is better. The curve should be low for the 0 dots and high for the 1 dots.`}}},
+{e:'Deciding if a fruit is an apple or a banana from its size.',t:'Move the new point and change k. The dashed circle shows the neighbours that vote.',c:D=>{const x=D.map(r=>r[0]),y=D.map(r=>r[1]);return[['x','New point x',Math.min(...x),Math.max(...x),.1,mean(x)],['y','New point y',Math.min(...y),Math.max(...y),.1,mean(y)],['k','k (neighbours)',1,D.length,1,3]]},d:(D,v)=>{const sd=D.map(r=>[r,Math.hypot(r[0]-v.x,r[1]-v.y)]).sort((a,b)=>a[1]-b[1]),nr=sd.slice(0,v.k),cn={};nr.forEach(a=>cn[a[0][2]]=(cn[a[0][2]]||0)+1);const mx=Math.max(...Object.values(cn)),w=nr.find(a=>cn[a[0][2]]==mx)[0][2];return{s:plot({pts:[...D.map(r=>[r[0],r[1],r[2]]),[v.x,v.y,w,11]],circ:[[v.x,v.y,nr[v.k-1][1],col(w)]]}),t:`Votes: ${Object.entries(cn).map(([c,m])=>`class ${c} = ${m}`).join(', ')}. The big dot becomes <b>class ${w}</b>.`}}},
+ksim(0),ksim(1),
+{e:'Finding busy areas and lonely houses on a map.',t:'Make eps small and everything becomes noise. Make it large and separate clusters merge. Find the middle.',c:()=>[['e','eps (neighbour distance)',.2,10,.1,1],['m','minPts',1,6,1,3]],d:(D,v)=>{const n=D.length,nb=D.map(r=>D.map((q,j)=>j).filter(j=>Math.hypot(r[0]-D[j][0],r[1]-D[j][1])<=v.e+1e-9)),core=nb.map(a=>a.length>=v.m),lab=Array(n).fill(-1);let c=0;for(let i=0;i<n;i++){if(lab[i]!=-1||!core[i])continue;const q=[i];lab[i]=c;while(q.length){const a=q.shift();if(!core[a])continue;nb[a].forEach(b=>{if(lab[b]==-1){lab[b]=c;q.push(b)}})}c++}return{s:plot({pts:D.map((r,i)=>[r[0],r[1],lab[i]]),circ:D.map((r,i)=>core[i]?[r[0],r[1],v.e,col(lab[i])]:null).filter(Boolean)}),t:`Clusters: <b>${c}</b>. Noise points (grey): <b>${lab.filter(a=>a<0).length}</b>. Circles are drawn around core points.`}}},
+{e:'Spotting spam by combining many simple rules.',t:'Add rounds one by one. Each new stump fixes some mistakes, so more correct dots should appear.',c:()=>[['t','Number of stumps',1,10,1,1]],d:(D,v)=>{const n=D.length,x=D.map(r=>r[0]),y=D.map(r=>r[1]>0?1:-1),u=[...new Set(x)].sort((a,b)=>a-b),th=u.slice(1).map((a,i)=>(a+u[i])/2),h=(t,s,a)=>s*(a>t?1:-1);let w=Array(n).fill(1/n);const al=[],hs=[];for(let r=0;r<v.t;r++){let bs=null;th.forEach(t=>[1,-1].forEach(s=>{const e=sum(x.map((a,i)=>h(t,s,a)!=y[i]?w[i]:0));if(!bs||e<bs.e-1e-12)bs={t,s,e}}));const e=Math.min(Math.max(bs.e,1e-10),1-1e-10),a=.5*Math.log((1-e)/e),nw=w.map((q,i)=>q*Math.exp(-a*y[i]*h(bs.t,bs.s,x[i]))),z=sum(nw);w=nw.map(q=>q/z);al.push(a);hs.push(bs)}const sc=x.map(q=>sum(al.map((a,r)=>a*h(hs[r].t,hs[r].s,q)))),ok=sc.filter((s,i)=>(s>=0?1:-1)==y[i]).length;return{s:plot({pts:x.map((q,i)=>[q,sc[i],y[i]>0?0:1]),lines:[[Math.min(...x),0,Math.max(...x),0,'#64748B']]}),t:`With ${v.t} stump${v.t>1?'s':''}: <b>${ok} of ${n}</b> correct. Above the grey line = voted +1, below = voted −1. Blue dots are truly +1, orange dots truly −1.`}}},
+{e:'Guessing the weather outside from what people carry (umbrella, sunglasses).',t:'The computer invents a hidden sequence and what we would see. Viterbi sees only the second row and guesses the third. Move the random-run slider for a new example.',c:()=>[['n','Number of days',2,8,1,5],['r','Random run',1,99,1,7]],d:(D,v,u)=>{const ls=s=>s.split(',').map(a=>a.trim()).filter(Boolean),S=ls(u.s),O=ls(u.o),pi=num(u.p),A=rows(u.a),B=rows(u.b);let z=v.r*9301+49297;const rnd=()=>(z=(z*9301+49297)%233280)/233280,pk=p=>{let r=rnd(),i=0;while(i<p.length-1&&r>p[i]){r-=p[i];i++}return i},T=v.n,hid=[],ob=[];let s=pk(pi);for(let t=0;t<T;t++){if(t)s=pk(A[s]);hid.push(s);ob.push(pk(B[s]))}let de=pi.map((p,i)=>p*B[i][ob[0]]);const ps=[];for(let t=1;t<T;t++){const nd=[],pp=[];S.forEach((_,j)=>{const c=de.map((q,i)=>q*A[i][j]),bi=c.indexOf(Math.max(...c));pp.push(bi);nd.push(c[bi]*B[j][ob[t]])});de=nd;ps.push(pp)}let b=de.indexOf(Math.max(...de));const path=[b];for(let t=T-2;t>=0;t--){b=ps[t][b];path.unshift(b)}const ok=path.filter((p,i)=>p==hid[i]).length;return{s:tab(['Day',...hid.map((_,i)=>i+1)],[['Hidden truth',...hid.map(i=>chip(S[i],i))],['What we see',...ob.map(i=>O[i])],['Viterbi guess',...path.map(i=>chip(S[i],i))],['Match?',...path.map((p,i)=>p==hid[i]?'✓':'✗')]]),t:`Viterbi got <b>${ok} of ${T}</b> days right using only the “What we see” row.`}}}];
+function sim(){const S=SIM[A.indexOf(cur)],q=$('sim');try{const u=vals(),D=rows(u.d||'').filter(r=>r.length>=2),cs=S.c(D);q.innerHTML=`<h2>🎮 Try it yourself: simulation</h2><p><b>Real life:</b> ${S.e}</p><p>${S.t}</p>${cs.map(a=>`<label class="f">${a[1]}: <output id="o_${a[0]}">${f(a[5])}</output><input type="range" id="s_${a[0]}" min="${a[2]}" max="${a[3]}" step="${a[4]}" value="${a[5]}"></label>`).join('')}<div class="eq" id="st"></div><div class="chart" id="sv"></div>`;const up=()=>{const v={};cs.forEach(a=>{v[a[0]]=+$('s_'+a[0]).value;$('o_'+a[0]).textContent=f(v[a[0]])});try{const r=S.d(D,v,u);$('sv').innerHTML=r.s;$('st').innerHTML=r.t}catch(e){$('st').textContent='Please fix the data above to use the simulation.'}};q.oninput=up;up()}catch(e){q.innerHTML=''}}
+let cur,res,k=0,timer;
+A.forEach((a,i)=>{const b=document.createElement('button');b.innerHTML=`<span>${a.i}</span>${a.n}`;b.onclick=()=>pick(i);$('nav').append(b)});
+function pick(i){cur=A[i];[...$('nav').children].forEach((b,j)=>b.classList.toggle('on',i==j));$('ttl').textContent=cur.n;$('goal').textContent=cur.goal;document.title=cur.n+' – ML Algorithm Learning Lab';
+$('form').innerHTML=cur.F.map(([id,l,val,t])=>`<label class="f">${l}${t=='ta'?`<textarea id="f_${id}" rows="${Math.min(10,val.split('\n').length+1)}">${val}</textarea>`:`<input id="f_${id}" value="${val}">`}</label>`).join('');run()}
+const vals=()=>Object.fromEntries(cur.F.map(a=>[a[0],$('f_'+a[0]).value]));
+function run(){try{res=cur.S(vals());k=0;$('err').style.display='none';draw();sim()}catch(e){$('sim').innerHTML='';$('err').style.display='block';$('err').textContent=typeof e=='string'?e:'Please check your numbers and try again.'}}
+function draw(){const s=res.steps,n=s.length;$('steps').innerHTML=s.slice(0,k+1).map((x,i)=>`<section class="card step${i==k?' now':''}"><h3><span class="num">${i+1}</span>${x.h}</h3>${x.f?`<div class="eq">${x.f}</div>`:''}<p>${x.t}</p>${x.s?`<div class="chart">${x.s}</div>`:''}${x.tb||''}</section>`).join('');
+$('fin').style.display=k==n-1?'block':'none';$('fin').innerHTML='<h2>Final answer</h2>'+res.fin;$('pos').textContent=`Step ${k+1} of ${n}`;$('prev').disabled=k==0;$('next').disabled=k==n-1}
+const go=d=>{if(!res)return;k=Math.max(0,Math.min(res.steps.length-1,d(k)));draw();const l=$('steps').lastElementChild;if(l&&k>0)l.scrollIntoView({block:'nearest'})};
+$('next').onclick=()=>go(a=>a+1);$('prev').onclick=()=>go(a=>a-1);$('all').onclick=()=>go(()=>1e9);$('start').onclick=()=>go(()=>0);$('run').onclick=run;
+$('form').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(run,500)});
+pick(0);
+</script></body></html>
